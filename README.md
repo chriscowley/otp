@@ -59,6 +59,6 @@ otp rm <name>
 
 # Contributing
 
-[Pull requests](https://git.lab.cowley.tech/chriscowley/otp/pulls) and [issues](https://git.lab.cowley.tech/chriscowley/otp/issues) are welcome with one caveat:
+[Pull requests](https://github.com/chriscowley/otp/pulls) and [issues](https://github.com/chriscowley/otp/issues) are welcome with one caveat:
 
 I use this literally every day, if you change the way anything works it needs to have a **really** good reason.
