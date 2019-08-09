@@ -1,0 +1,82 @@
+#!/usr/bin/env bash
+
+set -e
+set -o pipefail
+
+CONFIG_DIR="${HOME}/.config/otp"
+if [ -f "${CONFIG_DIR}/config" ]
+then
+  source "${CONFIG_DIR}/config"
+fi
+
+if [ -z ${OTP_GPG_UID+x} ]
+then
+  if [ $(gpg --list-secret-keys  | grep uid | wc -l) -gt 1 ]
+  then
+    echo "Need to know which GPG ID to use"
+    gpg --list-secret-keys --keyid-format LONG
+    exit 1
+  elif [ $(gpg --list-secret-keys  | grep uid | wc -l) -eq 0 ]
+  then
+    gpg --full-generate-key
+  fi
+  OTP_GPG_UID=$(gpg --list-secret-keys  | grep uid | awk '{print $NF}' | sed -e 's/<//' -e 's/<//')
+fi
+
+if [ ! -d "${CONFIG_DIR}/keys" ]
+then
+  echo "Keys dir does not exist"
+  mkdir -pv "${CONFIG_DIR}/keys"
+fi
+
+ProgName=$(basename $0)
+
+sub__help(){
+    echo "Usage: $ProgName <subcommand>"
+    echo "Subcommands:"
+    echo "    add <name> <secret>  Add a new key"
+    echo "    get <name>           Get a new OTP code"
+    echo "    list                 List all keys"
+    echo "    rm <name>            Delete key"
+    echo ""
+}
+
+sub__add() {
+  NAME=$1
+  KEY=$2
+  KEYFILE="${CONFIG_DIR}/keys/${NAME}"
+  echo "${KEY}" > ${KEYFILE}
+  gpg -r "${OTP_GPG_UID}" --encrypt "${KEYFILE}" && rm -f ${KEYFILE}
+}
+
+sub__get() {
+  NAME=$1
+  SECRET=$(gpg --quiet -r ${OTP_GPG_UID} --decrypt "${CONFIG_DIR}/keys/${NAME}.gpg")
+  oathtool --b --totp ${SECRET}
+}
+
+sub__list() {
+  ls ${CONFIG_DIR}/keys | sed 's/.gpg//g'
+}
+
+sub__rm() {
+  KEY=$1
+  rm -f "${CONFIG_DIR}/keys/${KEY}.gpg"
+}
+
+subcommand=$1
+case $subcommand in
+
+  "" | "-h" | "--help")
+    sub_help
+    ;;
+  *)
+    shift
+    sub__${subcommand} $@
+    if [ $? = 127 ]; then
+      echo "Error: '$subcommand' is not a known subcommand." >&2
+      echo "       Run '$ProgName --help' for a list of known subcommands." >&2
+      exit 1
+    fi
+    ;;
+esac
