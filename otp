@@ -13,8 +13,8 @@ if [ -z ${OTP_GPG_UID+x} ]
 then
   if [ $(gpg --list-secret-keys  | grep uid | wc -l) -gt 1 ]
   then
-    echo "Need to know which GPG ID to use"
-    gpg --list-secret-keys --keyid-format LONG
+    echo "Need to know which GPG ID to use"  >&2
+    gpg --list-secret-keys --keyid-format LONG >&2
     exit 1
   elif [ $(gpg --list-secret-keys  | grep uid | wc -l) -eq 0 ]
   then
